@@ -3,9 +3,16 @@ import {
   TransportState,
   RTVIError,
   RTVIEvent,
-  TranscriptData,
+  BotLLMTextData, // Assuming this type is available for BotTranscript
 } from "@pipecat-ai/client-js";
 import { useRTVIClient, useRTVIClientEvent } from "@pipecat-ai/client-react";
+
+type TranscriptData = {
+  text: string;
+  final: boolean;
+  timestamp: string;
+  user_id: string;
+};
 
 const App: React.FC = () => {
   const voiceClient = useRTVIClient();
@@ -23,8 +30,16 @@ const App: React.FC = () => {
   // Capture bot transcripts (no final check)
   useRTVIClientEvent(
     RTVIEvent.BotTranscript,
-    useCallback((td: TranscriptData) => {
-      setTranscripts((prev) => [...prev, { role: "bot", data: td }]);
+    useCallback((data: BotLLMTextData) => {
+      const transformedData: TranscriptData = {
+        text: data.text,
+        final: true, // Assume bot messages are always final
+        timestamp: new Date().toISOString(), // Use current timestamp
+        user_id: "bot", // Static ID for bot
+      };
+
+      setTranscripts((prev) => [...prev, { role: "bot", data: transformedData }]);
+
       // Animate the button for ~2s whenever the bot speaks
       setIsSpeaking(true);
       setTimeout(() => setIsSpeaking(false), 2000);
@@ -34,9 +49,9 @@ const App: React.FC = () => {
   // Capture user transcripts (with final check)
   useRTVIClientEvent(
     RTVIEvent.UserTranscript,
-    useCallback((td: TranscriptData) => {
-      if (td.final) {
-        setTranscripts((prev) => [...prev, { role: "user", data: td }]);
+    useCallback((data: TranscriptData) => {
+      if (data.final) {
+        setTranscripts((prev) => [...prev, { role: "user", data }]);
       }
     }, [])
   );
@@ -75,27 +90,21 @@ const App: React.FC = () => {
       {/* Connect/Disconnect button */}
       <button
         onClick={() => (state === "disconnected" ? connect() : disconnect())}
-        // Tailwind classes:
-        // - animate-pulse for "vibrating" effect when isSpeaking
-        // - If state != "disconnected", background changes to red
         className={`mx-auto px-5 py-2 rounded-full self-center transition-all 
           ${isSpeaking ? "animate-pulse" : ""}
           ${state !== "disconnected" ? "bg-red-200" : "bg-slate-300"}
         `}
       >
         {state === "disconnected" ? (
-          // Microphone icon when disconnected, black color
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5 text-black"
             fill="currentColor"
             viewBox="0 0 512 512"
           >
-            {/* Minimal "microphone" icon path */}
             <path d="M256 320c53.02 0 96-43 96-96V96c0-53-43-96-96-96s-96 43-96 96v128c0 53 43 96 96 96zm-24 144.9v47.1c0 13.3 10.7 24 24 24s24-10.7 24-24v-47.1c72.9-11.8 128-73.5 128-150.9 0-13.3-10.7-24-24-24s-24 10.7-24 24c0 55.2-44.8 100-100 100s-100-44.8-100-100c0-13.3-10.7-24-24-24s-24 10.7-24 24c0 77.4 55.1 139.1 128 150.9z" />
           </svg>
         ) : (
-          // Microphone icon when connected, red color
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5 text-red-600"
