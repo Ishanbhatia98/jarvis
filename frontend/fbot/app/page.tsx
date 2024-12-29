@@ -13,6 +13,15 @@ export type TranscriptData = {
   user_id?: string; // Optional
 };
 
+if (
+  typeof navigator !== "undefined" &&
+  navigator.mediaDevices &&
+  !("ondevicechange" in navigator.mediaDevices)
+) {
+  (navigator.mediaDevices as MediaDevices).ondevicechange = null;
+}
+
+
 const defaultConfig = [
   {
     service: "llm",
