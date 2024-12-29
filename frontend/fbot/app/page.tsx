@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { RTVIClient, RTVIEvent, LLMHelper } from "@pipecat-ai/client-js";
+import { RTVIClient, RTVIEvent, LLMHelper, FunctionCallParams } from "@pipecat-ai/client-js";
 import { DailyTransport } from "@pipecat-ai/daily-transport";
 import { RTVIClientAudio, RTVIClientProvider } from "@pipecat-ai/client-react";
 import App from "./App";
 
 export type TranscriptData = {
   text: string;
-  final: boolean;
-  timestamp: string;
-  user_id: string;
+  final?: boolean; // Optional
+  timestamp?: string; // Optional
+  user_id?: string; // Optional
 };
 
 const defaultConfig = [
@@ -107,8 +107,7 @@ export default function Home() {
       return;
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-    let transcripts: TranscriptData[] = [];
+    const transcripts: TranscriptData[] = [];
 
     const newVoiceClient = new RTVIClient({
       transport: new DailyTransport(),
@@ -137,12 +136,14 @@ export default function Home() {
       new LLMHelper({
         callbacks: {},
       })
-    );
+    ) as LLMHelper;
 
-    llmHelper.handleFunctionCall(async (fn: any) => {
-      const args = fn.arguments;
+    llmHelper.handleFunctionCall(async (fn: FunctionCallParams) => {
+      console.log("Function", fn);
 
-      if (fn.functionName === "get_weather" && args.location && args.format) {
+      const args = fn.arguments as Record<string, unknown>; // Replaced `any` with `Record<string, unknown>`
+
+      if (fn.functionName === "get_weather" && typeof args.location === "string" && typeof args.format === "string") {
         try {
           const response = await fetch(
             `/api/weather?location=${encodeURIComponent(args.location)}&format=${encodeURIComponent(
@@ -156,7 +157,7 @@ export default function Home() {
         }
       }
 
-      if (fn.functionName === "get_stock_price" && args.ticker) {
+      if (fn.functionName === "get_stock_price" && typeof args.ticker === "string") {
         try {
           const response = await fetch(`/api/stock-price?ticker=${encodeURIComponent(args.ticker)}`);
           return await response.json();
@@ -166,7 +167,11 @@ export default function Home() {
         }
       }
 
-      if (fn.functionName === "get_exchange_rate" && args.base_currency && args.target_currency) {
+      if (
+        fn.functionName === "get_exchange_rate" &&
+        typeof args.base_currency === "string" &&
+        typeof args.target_currency === "string"
+      ) {
         try {
           const response = await fetch(
             `/api/exchange-rate?base_currency=${encodeURIComponent(
@@ -195,7 +200,7 @@ export default function Home() {
 
     newVoiceClient.on(RTVIEvent.Disconnected, async () => {
       console.log("[EVENT] User disconnected");
-      const botId = newVoiceClient._transport?._botId || `fallback-${Date.now()}`;
+      const botId = `fallback-${Date.now()}`;
       if (!transcripts.length) {
         console.warn("No transcripts to save. Skipping API call.");
         return;

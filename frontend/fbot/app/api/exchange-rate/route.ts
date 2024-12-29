@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const apiKey = process.env.EXCHANGERATE_API_KEY; // Ensure this is set in .env.local
+    // const apiKey = process.env.EXCHANGERATE_API_KEY; // Ensure this is set in .env.local
     const exchangeRateUrl = `https://api.exchangerate-api.com/v4/latest/${encodeURIComponent(
       base_currency
     )}`;
