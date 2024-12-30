@@ -13,12 +13,15 @@ export type TranscriptData = {
   user_id?: string; // Optional
 };
 
-if (
-  typeof navigator !== "undefined" &&
-  navigator.mediaDevices &&
-  !("ondevicechange" in navigator.mediaDevices)
-) {
-  (navigator.mediaDevices as MediaDevices).ondevicechange = null;
+if (typeof navigator !== "undefined" && navigator.mediaDevices) {
+  if (!("ondevicechange" in navigator.mediaDevices)) {
+    console.warn("'ondevicechange' is not supported in this browser.");
+  } else {
+    // Optionally, add a no-op listener if needed for debugging
+    navigator.mediaDevices.ondevicechange = () => {
+      console.log("Device change detected.");
+    };
+  }
 }
 
 
