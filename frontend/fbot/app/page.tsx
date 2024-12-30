@@ -13,17 +13,18 @@ export type TranscriptData = {
   user_id?: string; // Optional
 };
 
-if (typeof navigator !== "undefined" && navigator.mediaDevices) {
-  if (!("ondevicechange" in navigator.mediaDevices)) {
-    console.warn("'ondevicechange' is not supported in this browser.");
-  } else {
-    // Optionally, add a no-op listener if needed for debugging
-    navigator.mediaDevices.ondevicechange = () => {
-      console.log("Device change detected.");
-    };
+if (typeof window !== 'undefined') {
+  if (navigator?.mediaDevices) {
+    // Only add the property if it doesn't exist
+    if (!('ondevicechange' in navigator.mediaDevices)) {
+      Object.defineProperty(navigator.mediaDevices, 'ondevicechange', {
+        writable: true,
+        configurable: true,
+        value: null
+      });
+    }
   }
 }
-
 
 const defaultConfig = [
   {
